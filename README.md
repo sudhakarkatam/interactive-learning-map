@@ -2,7 +2,6 @@
 
 An AI-powered web application that generates interactive, visual learning roadmaps for any topic with follow-up question support. Built with React, TypeScript, Perplexity AI, and Supabase.
 
-![Learning Map Generator](https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=1200&h=400&fit=crop)
 
 ## 🎯 Overview
 
@@ -18,15 +17,6 @@ Learning Map Generator helps users create comprehensive learning paths for any s
 - 🎓 **Multi-Level Support**: Beginner, Intermediate, and Advanced learning paths
 - 💾 **Export Functionality**: Download your learning map as JSON for future reference
 - 💡 **Related Topics**: Get suggestions for related subjects to explore
-- ✅ **URL Verification**: All resources are verified for accessibility (no broken links)
-- 🔄 **Global Deduplication**: No duplicate resources across the entire learning map
-
-### Interactive Elements
-- **Hover Effects**: Preview node descriptions on hover
-- **Click to Expand**: Detailed modal with learning resources and prerequisites
-- **Smooth Animations**: Fluid transitions and animated connections
-- **Responsive Design**: Works seamlessly on desktop and mobile devices
-- **Follow-Up Chat**: Ask questions and get AI-powered answers about your topic
 
 ## 🛠️ Tech Stack
 
@@ -206,12 +196,6 @@ npm run build
 
 ### Perplexity AI Integration
 
-**Why Perplexity?**
-- Real-time web search capability
-- Always returns current, verified URLs
-- No hallucinated links or outdated content
-- Optimized for factual, up-to-date information
-
 **API Configuration**
 ```typescript
 // Vite proxy and edge functions use the same config
@@ -222,13 +206,6 @@ const config = {
    search: true        // Enable web search
 };
 ```
-
-**Available Models (2025)**
-- `sonar` - Fast, balanced model
-- `sonar-pro` - **Default**, best quality/speed ratio
-- `sonar-reasoning` - Advanced reasoning
-- `sonar-reasoning-pro` - Maximum reasoning capability
-- `sonar-deep-research` - Comprehensive research
 
 **Request Flow**
 1. Frontend calls `/api/perplexity-map` (proxy) or Supabase function
@@ -340,26 +317,7 @@ const config = {
 }
 ```
 
-### URL Verification Pipeline
 
-**Quality Assurance Process:**
-1. **Normalization**: Convert YouTube shorts to standard format
-2. **Format Validation**: Check URL structure (http/https, valid domain)
-3. **Homepage Filtering**: Reject generic homepage URLs
-4. **Per-Node Deduplication**: Remove duplicates within each node
-5. **Accessibility Check**: HEAD/GET request with 5s timeout
-6. **Global Deduplication**: Remove duplicates across entire map
-7. **Logging**: Track verification rate and duplicate removals
-
-**Verification Configuration:**
-```typescript
-const verifyConfig = {
-   timeout: 5000,        // 5 seconds max per URL
-   concurrency: 10,      // 10 parallel requests
-   methods: ['HEAD', 'GET'], // Try HEAD first, fallback to GET
-   followRedirects: true
-};
-```
 
 ## 📂 Project Structure
 
@@ -399,26 +357,7 @@ learning-map-generator/
 └── package.json                    # Dependencies
 ```
 
-## 🎨 Design System
 
-### Color Palette
-- **Primary**: Blue (`hsl(217 91% 60%)`) - Learning & Intelligence
-- **Secondary**: Purple (`hsl(271 76% 53%)`) - Creativity & Innovation  
-- **Accent**: Teal (`hsl(174 62% 47%)`) - Growth & Progress
-- **Background**: Light gradient with subtle depth
-
-### Gradients
-- `gradient-primary`: Blue to Teal (main actions)
-- `gradient-secondary`: Purple to Blue (branches)
-- `gradient-subtle`: Light background gradient
-
-### Components
-All components use semantic tokens from the design system for consistent theming:
-- `--primary`: Main brand color
-- `--secondary`: Secondary surfaces
-- `--accent`: Highlights and focus states
-- `--muted`: Subtle backgrounds
-- Custom tokens for shadows, transitions, and gradients
 
 ## 🔌 API Design
 
@@ -440,30 +379,6 @@ All components use semantic tokens from the design system for consistent theming
 3. Provide a smooth, mobile-friendly user experience
 4. Support continued exploration with conversational follow-ups
 
-### Key Architectural Decisions
-| Decision | Rationale | Trade-Off |
-|----------|-----------|-----------|
-| Perplexity Sonar as sole AI provider | Real-time web search + fresher links | Vendor dependency |
-| Dual API (proxy in dev + edge in prod) | Faster iteration + secure prod separation | Slight duplication of logic |
-| Global URL deduplication Set | Prevents repeated resources across nodes | Removes occasionally relevant cross-links |
-| HEAD then GET verification with timeout | Balance speed vs accuracy | Adds generation latency |
-| 10K token context window | Better structured, richer maps | Higher token usage cost |
-| Low temperature (0.2) for map | Deterministic, structured output | Less creative variety |
-| Follow-up chat separate endpoint | Keeps map generation lean | More code paths to maintain |
-| CSS-based animation utilities | Lightweight, no runtime overhead | Less granular control vs Framer Motion |
-
-### Performance Considerations
-- URL verification runs in parallel (concurrency=10) to minimize total wait time
-- Verification only after AI output (no mid-generation overhead)
-- Minimal external dependencies to keep bundle small
-- Staggered animations for perceived performance
-
-### Failure Handling
-- If proxy fails → fallback to Supabase function
-- If Supabase returns legacy shape → enrich via proxy when available
-- If link verification fails heavily → still returns partial map (best-effort)
-- Chat gracefully degrades: proxy → Supabase → user-facing error message
-
 ### Potential Enhancements (Future Work)
 - Add user auth + saved maps
 - Progress tracking + completion badges
@@ -472,10 +387,6 @@ All components use semantic tokens from the design system for consistent theming
 - Framer Motion upgrade for fine-grained interactive animations
 - Rate limiting + abuse detection on public endpoints
 
-### Known Limitations
-- No streaming responses yet (full JSON returned after generation)
-- Verification may exclude slower servers that time out at 5s
-- Some niche domains may be filtered if not in curated list
 - No offline mode / PWA caching yet
 
 ### Why Not OpenAI / Gemini?
@@ -490,68 +401,7 @@ All components use semantic tokens from the design system for consistent theming
 4. Generate a map: enter topic → select level → Generate
 5. Ask follow-ups below the map for deeper insights
 
-## 🙌 Contributions & Feedback
-Issues and pull requests are welcome. Ideas for improvement? Open an issue describing the use case.
 
-## 📄 License
-MIT License. Use freely with attribution.
-
----
-Built for curious learners. Empowering structured exploration with real-time knowledge.
-
-**Response:**
-```json
-{
-  "topic": "Web Development",
-  "description": "Learn to build modern websites...",
-  "branches": [
-    {
-      "id": "branch-1",
-      "name": "Frontend Development",
-      "description": "Client-side programming",
-      "level": "beginner",
-      "nodes": [
-        {
-          "id": "node-1-1",
-          "name": "HTML Basics",
-          "description": "Structure of web pages...",
-          "resources": [
-            {
-              "title": "MDN HTML Guide",
-              "url": "https://developer.mozilla.org/...",
-              "type": "article"
-            }
-          ],
-          "estimatedHours": 10,
-          "prerequisites": []
-        }
-      ]
-    }
-  ],
-  "relatedTopics": ["JavaScript", "CSS", "React"]
-}
-```
-
-## 🤖 LLM Integration
-
-### System Prompt Strategy
-The edge function uses a carefully crafted system prompt that:
-- Enforces strict JSON structure
-- Adapts complexity based on skill level
-- Requests 2-3 quality resources per node
-- Ensures logical learning progression
-- Includes time estimates and prerequisites
-
-### Error Handling
-- Rate limiting (429): User-friendly retry message
-- Payment required (402): Clear upgrade instructions
-- Parse errors: Graceful fallback with error logging
-- Network failures: Automatic retry with exponential backoff
-
-### Model Selection
-- **Default**: `google/gemini-2.5-flash`
-- **Reason**: Balanced speed, cost, and quality
-- **Alternatives**: Can upgrade to `gemini-2.5-pro` for complex topics
 
 ## 👥 User Flow
 
@@ -594,107 +444,6 @@ The edge function uses a carefully crafted system prompt that:
 git add .
 git commit -m "Ready for deployment"
 git push origin main
-```
 
-2. In Lovable:
-   - Click "Publish" in the top right
-   - Your app deploys automatically to `<your-project>.lovable.app`
-
-3. Edge functions deploy automatically on every commit
-
-### Environment Variables
-All environment variables are managed automatically by Lovable Cloud. For local or self-hosted setups, set these:
-- `VITE_SUPABASE_URL`: Backend API URL
-- `VITE_SUPABASE_PUBLISHABLE_KEY`: Public API key
-- `PERPLEXITY_API_KEY`: Perplexity API key for live web search (Edge Function)
-- `LOVABLE_API_KEY` (optional fallback): Lovable AI Gateway key used only if Perplexity is not configured
-
-#### Using OpenRouter (Tongyi DeepResearch)
-
-The local dev proxy also supports OpenRouter so you can use Tongyi DeepResearch 30B A3B (free) instead of Perplexity.
-
-Set these in your `.env` and restart `npm run dev`:
-
-```cmd
-REM Required for OpenRouter
-set OPENROUTER_API_KEY=your_openrouter_key
-
-REM Optional: choose model, defaults to alibaba/tongyi-deepresearch-30b-a3b
-set VITE_OPENROUTER_MODEL=alibaba/tongyi-deepresearch-30b-a3b
-
-REM If you also have PERPLEXITY_API_KEY set, the proxy will try OpenRouter first,
-REM then fall back to Perplexity if OpenRouter fails.
-```
-
-To sanity check your OpenRouter setup:
-
-```cmd
-node test-openrouter.js
-```
-
-The Edge Function `/generate-map` prefers Perplexity for fresh web search (real URLs and YouTube links). If `PERPLEXITY_API_KEY` is missing but `LOVABLE_API_KEY` is present, it will use the Lovable AI Gateway as a fallback (without live web search).
-
-#### Setting the Perplexity key for the Edge Function (local CLI)
-
-On Windows cmd:
-
-```cmd
-supabase functions secrets set PERPLEXITY_API_KEY=your_pplx_key_here --project-ref sbendjlywkgvxfaqcilj
-```
-
-Optionally set a fallback (not required when using Perplexity):
-
-```cmd
-supabase functions secrets set LOVABLE_API_KEY=your_lovable_key_here --project-ref sbendjlywkgvxfaqcilj
-```
-
-Then run the function locally:
-
-```cmd
-supabase functions serve generate-map --no-verify-jwt --project-ref sbendjlywkgvxfaqcilj
-```
-
-Note: The `.env` at the project root is for the Vite frontend; function secrets must be set in the Edge Function runtime (via Supabase secrets or your hosting provider).
-
-## 📊 Performance Considerations
-
-### Optimization Strategies
-- **Lazy Loading**: Components load on demand
-- **Memoization**: React Flow nodes are memoized to prevent unnecessary re-renders
-- **Edge Functions**: Serverless architecture scales automatically
-- **Caching**: Browser caches static assets via CDN
-
-### Typical Response Times
-- Edge function cold start: ~1-2 seconds
-- Edge function warm: ~200-500ms
-- AI generation: ~3-5 seconds (varies by complexity)
-- Total generation time: ~4-7 seconds
-
-## 🤝 Contributing
-
-Contributions welcome! Please:
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
-
-## 📄 License
-
-MIT License - feel free to use this project for learning or commercial purposes.
-
-## 🙏 Acknowledgments
-
-- Built on [Lovable](https://lovable.dev) platform
-- Powered by Google Gemini AI
-- Icons by [Lucide](https://lucide.dev)
-- Graph visualization by [React Flow](https://reactflow.dev)
-
-## 📞 Support
-
-- Documentation: [docs.lovable.dev](https://docs.lovable.dev)
-- Community: [Discord](https://discord.gg/lovable)
-- Issues: Open a GitHub issue
-
----
 
 **Made with ❤️ for learners everywhere**
