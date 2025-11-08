@@ -1,0 +1,4 @@
+project_id = "sbendjlywkgvxfaqcilj"
+
+[functions.generate-map]
+verify_jwt = false
