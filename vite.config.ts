@@ -44,10 +44,10 @@ export default defineConfig(({ mode }) => {
           }
           const chunks: Buffer[] = [];
           for await (const chunk of req) chunks.push(chunk as Buffer);
-          interface IncomingBody { topic?: string; level?: string; }
+          interface IncomingBody { topic?: string; level?: string; verifyUrls?: boolean; }
           let body: IncomingBody = {};
           try { body = JSON.parse(Buffer.concat(chunks).toString('utf-8')) as IncomingBody; } catch { /* ignore parse error */ }
-          const { topic, level = 'beginner' } = body || {};
+          const { topic, level = 'beginner', verifyUrls = false } = body || {};
           if (!topic) {
             res.statusCode = 400;
             res.setHeader('Content-Type', 'application/json');
@@ -276,12 +276,19 @@ Include 2-3 REAL, ACCESSIBLE, UNIQUE resources per node (mix articles and YouTub
                   .filter((r: Resource) => r.url && validUrl(r.url) && !isHomepage(r.url));
                 n.resources = dedupe(n.resources);
                 total += n.resources.length;
-                const keep = new Array(n.resources.length).fill(false);
-                await withLimit(n.resources.map((_, i) => i), 10, async (i) => { const ok = await verifyUrl(n.resources![i].url); keep[i]=ok; if (ok) verified++; });
-                n.resources = n.resources.filter((_, i) => keep[i]);
-                // Ensure at least 2 resources per node
-                if (n.resources.length < 2) {
-                  console.warn(`[Map Proxy] Node "${n.name}" has only ${n.resources.length} verified resources`);
+                
+                // Only verify URLs if explicitly requested
+                if (verifyUrls) {
+                  const keep = new Array(n.resources.length).fill(false);
+                  await withLimit(n.resources.map((_, i) => i), 10, async (i) => { const ok = await verifyUrl(n.resources![i].url); keep[i]=ok; if (ok) verified++; });
+                  n.resources = n.resources.filter((_, i) => keep[i]);
+                  // Ensure at least 2 resources per node
+                  if (n.resources.length < 2) {
+                    console.warn(`[Map Proxy] Node "${n.name}" has only ${n.resources.length} verified resources`);
+                  }
+                } else {
+                  // Skip verification, assume all URLs are good
+                  verified = total;
                 }
               }
             }
@@ -308,16 +315,16 @@ Include 2-3 REAL, ACCESSIBLE, UNIQUE resources per node (mix articles and YouTub
                 }
               }
             }
-            console.log(`[Map Proxy] Verified ${verified}/${total} resource URLs (${Math.round(verified/total*100)}%)`);
+            console.log(`[Map Proxy] ${verifyUrls ? 'Verified' : 'Format-validated'} ${verified}/${total} resource URLs (${Math.round(verified/total*100)}%)`);
             console.log(`[Map Proxy] Removed ${duplicatesRemoved} duplicate URLs across the entire map`);
             // If verification rate is too low, warn
-            if (total > 0 && verified / total < 0.7) {
+            if (verifyUrls && total > 0 && verified / total < 0.7) {
               console.warn(`[Map Proxy] Low verification rate: ${verified}/${total}. Many URLs may be inaccessible.`);
             }
             res.statusCode = 200;
             res.setHeader('Content-Type', 'application/json');
             console.log(`[Map Proxy] Returning enriched map with ${mapObj.branches?.length || 0} branches via ${provider}`);
-            res.end(JSON.stringify({ map: mapObj, meta: { provider, localProxy: true, model: usedModel || MODEL, linkVerification: { verified, total } } }));
+            res.end(JSON.stringify({ map: mapObj, meta: { provider, localProxy: true, model: usedModel || MODEL, linkVerification: { verified, total, mode: verifyUrls ? 'full' : 'format-only' } } }));
           } catch (err) {
             console.error('[Map Proxy] Unhandled error:', err);
             res.statusCode = 500;
