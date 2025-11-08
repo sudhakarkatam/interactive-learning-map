@@ -71,105 +71,163 @@ const Index = () => {
     branches: UIBranch[];
     relatedTopics: string[];
   };
-  type GenerateMapMeta = { provider: 'perplexity' };
-  type GenerateMapEnvelope = { error?: string; map?: UIMap; meta?: GenerateMapMeta; topic?: string; description?: string; branches?: UIBranch[]; relatedTopics?: string[] };
+  type GenerateMapMeta = { provider: "perplexity" };
+  type GenerateMapEnvelope = {
+    error?: string;
+    map?: UIMap;
+    meta?: GenerateMapMeta;
+    topic?: string;
+    description?: string;
+    branches?: UIBranch[];
+    relatedTopics?: string[];
+  };
 
   const handleGenerate = async (topic: string, level: string) => {
     setIsLoading(true);
     console.log("🚀 Starting learning map generation...");
     console.log("📝 Topic:", topic);
     console.log("🎯 Level:", level);
-  console.log("🔑 API Keys Status:");
-  console.log("- VITE_SUPABASE_URL:", import.meta.env.VITE_SUPABASE_URL ? "✅ Configured" : "❌ Missing");
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  console.log("- Supabase anon key:", (import.meta as any).env.VITE_SUPABASE_ANON_KEY || (import.meta as any).env.VITE_SUPABASE_PUBLISHABLE_KEY ? "✅ Configured" : "❌ Missing");
+    console.log("🔑 API Keys Status:");
+    console.log(
+      "- VITE_SUPABASE_URL:",
+      import.meta.env.VITE_SUPABASE_URL ? "✅ Configured" : "❌ Missing",
+    );
+    console.log(
+      "- Supabase anon key:",
+      import.meta.env.VITE_SUPABASE_ANON_KEY ? "✅ Configured" : "❌ Missing",
+    );
 
     try {
       // Prefer local proxy first to ensure OpenRouter + deep link verification in dev
       let finalMap: UIMap | undefined;
       let resp: GenerateMapEnvelope | null = null;
       try {
-        const r = await fetch('/api/perplexity-map', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ topic, level })
+        const r = await fetch("/api/perplexity-map", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ topic, level }),
         });
         const j = await r.json();
-        if (!r.ok) throw new Error(j?.error || 'Local proxy error');
+        if (!r.ok) throw new Error(j?.error || "Local proxy error");
         finalMap = j?.map as UIMap | undefined;
-        console.log('🧠 Provider:', j?.meta?.provider, j?.meta?.localProxy ? '(local proxy)' : '', 'model:', j?.meta?.model, j?.meta?.linkVerification);
+        console.log(
+          "🧠 Provider:",
+          j?.meta?.provider,
+          j?.meta?.localProxy ? "(local proxy)" : "",
+          "model:",
+          j?.meta?.model,
+          j?.meta?.linkVerification,
+        );
       } catch (e) {
-        console.warn('Local proxy unavailable or failed, falling back to Supabase function...', e instanceof Error ? e.message : e);
+        console.warn(
+          "Local proxy unavailable or failed, falling back to Supabase function...",
+          e instanceof Error ? e.message : e,
+        );
       }
 
       if (!finalMap) {
-        const { data, error } = await supabase.functions.invoke("generate-map", { body: { topic, level } });
+        const { data, error } = await supabase.functions.invoke(
+          "generate-map",
+          { body: { topic, level } },
+        );
         if (error) throw error;
-        resp = (typeof data !== 'undefined' ? data : null) as GenerateMapEnvelope | null;
+        resp = (
+          typeof data !== "undefined" ? data : null
+        ) as GenerateMapEnvelope | null;
         if (resp?.error) throw new Error(resp.error);
-        finalMap = resp?.map || (resp?.topic && resp?.branches ? {
-          topic: resp.topic,
-          description: resp.description || '',
-          branches: resp.branches || [],
-          relatedTopics: resp.relatedTopics || []
-        } : undefined);
+        finalMap =
+          resp?.map ||
+          (resp?.topic && resp?.branches
+            ? {
+                topic: resp.topic,
+                description: resp.description || "",
+                branches: resp.branches || [],
+                relatedTopics: resp.relatedTopics || [],
+              }
+            : undefined);
         if (!finalMap) {
           // Final fallback: try proxy again
           try {
-            const r = await fetch('/api/perplexity-map', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ topic, level })
+            const r = await fetch("/api/perplexity-map", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ topic, level }),
             });
             const j = await r.json();
-            if (!r.ok) throw new Error(j?.error || 'Local proxy error');
+            if (!r.ok) throw new Error(j?.error || "Local proxy error");
             finalMap = j?.map as UIMap | undefined;
-            console.log('🧠 Provider:', j?.meta?.provider, j?.meta?.localProxy ? '(local proxy)' : '', 'model:', j?.meta?.model, j?.meta?.linkVerification);
+            console.log(
+              "🧠 Provider:",
+              j?.meta?.provider,
+              j?.meta?.localProxy ? "(local proxy)" : "",
+              "model:",
+              j?.meta?.model,
+              j?.meta?.linkVerification,
+            );
           } catch {
-            throw new Error('Malformed response: missing map structure');
+            throw new Error("Malformed response: missing map structure");
           }
         }
       }
 
       // If the response is legacy-shaped (no meta/map envelope), prefer Perplexity via local proxy to ensure real-time URLs
-    const isLegacy = !!resp && !('map' in (resp || {})) && !!resp?.topic;
+      const isLegacy = !!resp && !("map" in (resp || {})) && !!resp?.topic;
       if (isLegacy) {
-        console.log('ℹ️ Legacy response detected from server. Enriching via local proxy (OpenRouter/Perplexity) for fresh links...');
+        console.log(
+          "ℹ️ Legacy response detected from server. Enriching via local proxy (OpenRouter/Perplexity) for fresh links...",
+        );
         try {
-          const r = await fetch('/api/perplexity-map', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ topic, level })
+          const r = await fetch("/api/perplexity-map", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ topic, level }),
           });
           const j = await r.json();
           if (r.ok && j?.map) {
             finalMap = j.map as UIMap;
-            console.log('🧠 Provider:', j?.meta?.provider, j?.meta?.localProxy ? '(local proxy)' : '', 'model:', j?.meta?.model, j?.meta?.linkVerification);
+            console.log(
+              "🧠 Provider:",
+              j?.meta?.provider,
+              j?.meta?.localProxy ? "(local proxy)" : "",
+              "model:",
+              j?.meta?.model,
+              j?.meta?.linkVerification,
+            );
           } else {
-            console.warn('Perplexity local proxy failed; using legacy map. Error:', j?.error);
+            console.warn(
+              "Perplexity local proxy failed; using legacy map. Error:",
+              j?.error,
+            );
           }
         } catch (e) {
-          console.warn('Perplexity local proxy unavailable; using legacy map.');
+          console.warn("Perplexity local proxy unavailable; using legacy map.");
         }
       }
 
-      if (!finalMap) throw new Error("Malformed response: missing map structure");
+      if (!finalMap)
+        throw new Error("Malformed response: missing map structure");
 
       console.log("✅ Learning map generated successfully");
-      console.log("🧠 Provider:", resp?.meta?.provider || (resp?.map ? 'unknown' : 'legacy-shape'));
+      console.log(
+        "🧠 Provider:",
+        resp?.meta?.provider || (resp?.map ? "unknown" : "legacy-shape"),
+      );
       console.log("📊 Map data:", finalMap);
 
       setLearningMap(finalMap);
       toast({
         title: "Success!",
-    description: `Your learning map has been generated${resp?.meta?.provider ? ` using ${resp.meta.provider}` : ''}.`,
+        description: `Your learning map has been generated${resp?.meta?.provider ? ` using ${resp.meta.provider}` : ""}.`,
       });
     } catch (error) {
       console.error("❌ Error generating map:", error);
       console.log("💡 Check server logs for API key status and error details");
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to generate learning map. Please try again.",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to generate learning map. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -229,7 +287,9 @@ const Index = () => {
                 <h1 className="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent truncate">
                   Learning Map Generator
                 </h1>
-                <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">AI-Powered Learning Roadmaps</p>
+                <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">
+                  AI-Powered Learning Roadmaps
+                </p>
               </div>
             </div>
             {learningMap && (
@@ -254,8 +314,9 @@ const Index = () => {
             Master Any Subject with AI
           </h2>
           <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            Enter any topic and get a comprehensive, interactive learning roadmap
-            powered by advanced AI. Explore branches, discover resources, and track your progress.
+            Enter any topic and get a comprehensive, interactive learning
+            roadmap powered by advanced AI. Explore branches, discover
+            resources, and track your progress.
           </p>
         </div>
 
@@ -277,7 +338,7 @@ const Index = () => {
             </div>
 
             {/* Follow-Up Chat Section */}
-            <FollowUpChat 
+            <FollowUpChat
               topic={learningMap.topic}
               learningMapContext={JSON.stringify(learningMap, null, 2)}
             />
@@ -296,7 +357,8 @@ const Index = () => {
       <footer className="border-t border-border bg-card/50 backdrop-blur-sm mt-12 sm:mt-16 md:mt-20">
         <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 text-center text-xs sm:text-sm text-muted-foreground">
           <p className="leading-relaxed">
-            Built with AI • Powered by Perplexity • Made with ❤️ for learners everywhere
+            Built with AI • Powered by Perplexity • Made with ❤️ for learners
+            everywhere
           </p>
         </div>
       </footer>
